@@ -99,7 +99,6 @@ object_heap_expand(object_heap_p heap)
 int
 object_heap_init(object_heap_p heap, int object_size, int id_offset)
 {
-    pthread_mutex_init(&heap->mutex, NULL);
     heap->object_size = object_size;
     heap->id_offset = id_offset & OBJECT_HEAP_OFFSET_MASK;
     heap->heap_size = 0;
@@ -107,7 +106,13 @@ object_heap_init(object_heap_p heap, int object_size, int id_offset)
     heap->next_free = LAST_FREE;
     heap->num_buckets = 0;
     heap->bucket = NULL;
-    return object_heap_expand(heap);
+    if (object_heap_expand(heap) == 0) {
+        pthread_mutex_init(&heap->mutex, NULL);
+        return 0;
+    } else {
+        free(heap->bucket);
+        return -1;
+    }
 }
 
 /*
