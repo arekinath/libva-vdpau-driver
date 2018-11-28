@@ -75,7 +75,7 @@ EXTRA_DIST = \
 install-data-hook:
 	cd $(DESTDIR)$(LIBVA_DRIVERS_PATH) ;			\
 	for drv in $(DRIVERS); do				\
-	    ln -s vdpau_drv_video.so $${drv}_drv_video.so;	\
+	    ln -sf vdpau_drv_video.so $${drv}_drv_video.so;	\
 	done
 
 # Extra clean files so that maintainer-clean removes *everything*
