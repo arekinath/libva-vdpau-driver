@@ -22,6 +22,7 @@
 #include "debug.h"
 #include "utils.h"
 #include <stdarg.h>
+#include <unistd.h>
 
 static void do_vfprintf(FILE *fp, const char *msg, va_list args)
 {
@@ -43,9 +44,9 @@ void vdpau_error_message(const char *msg, ...)
 {
     va_list args;
 
-    do_fprintf(stderr, "%s: error: ", PACKAGE_NAME);
+    do_fprintf(stdout, "%s: error: ", PACKAGE_NAME);
     va_start(args, msg);
-    do_vfprintf(stderr, msg, args);
+    do_vfprintf(stdout, msg, args);
     va_end(args);
 }
 
@@ -69,17 +70,28 @@ static int debug_enabled(void)
     return g_debug_enabled;
 }
 
+static FILE *debug_file(void)
+{
+    static FILE *g_debug_file = NULL;
+    if (g_debug_file == NULL) {
+        g_debug_file = fopen("/tmp/libva-vdpau-debug.log", "a");
+    }
+    return g_debug_file;
+}
+
 void debug_message(const char *msg, ...)
 {
     va_list args;
+    FILE *f = debug_file();
 
     if (!debug_enabled())
         return;
 
-    do_fprintf(stdout, "%s: ", PACKAGE_NAME);
+    do_fprintf(f, "%s(%d): ", PACKAGE_NAME, getpid());
     va_start(args, msg);
-    do_vfprintf(stdout, msg, args);
+    do_vfprintf(f, msg, args);
     va_end(args);
+    fflush(f);
 }
 
 static int g_trace_is_new_line  = 1;
@@ -113,25 +125,26 @@ void trace_indent(int inc)
 void trace_print(const char *format, ...)
 {
     va_list args;
+    FILE *f = debug_file();
 
     if (g_trace_is_new_line) {
         int i, j, n;
-        printf("%s: ", PACKAGE_NAME);
+        fprintf(f, "%s: ", PACKAGE_NAME);
         n = trace_indent_width();
         for (i = 0; i < g_trace_indent; i++) {
             for (j = 0; j < n / 4; j++)
-                printf("    ");
+                fprintf(f, "    ");
             for (j = 0; j < n % 4; j++)
-                printf(" ");
+                fprintf(f, " ");
         }
     }
 
     va_start(args, format);
-    vfprintf(stdout, format, args);
+    vfprintf(f, format, args);
     va_end(args);
 
     g_trace_is_new_line = (strchr(format, '\n') != NULL);
 
     if (g_trace_is_new_line)
-        fflush(stdout);
+        fflush(f);
 }

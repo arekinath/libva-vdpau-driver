@@ -30,7 +30,7 @@ void vdpau_information_message(const char *msg, ...)
 void debug_message(const char *msg, ...)
     attribute_hidden;
 
-#if DEBUG && USE_DEBUG
+#if (DEBUG && USE_DEBUG)
 # define D(x) x
 # define bug debug_message
 #else
