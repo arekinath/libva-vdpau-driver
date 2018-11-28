@@ -401,7 +401,7 @@ render_surface(
     src_rect.y0 = source_rect->y;
     src_rect.x1 = source_rect->x + source_rect->width;
     src_rect.y1 = source_rect->y + source_rect->height;
-    ensure_bounds(&src_rect, obj_surface->width, obj_surface->height);   
+    ensure_bounds(&src_rect, obj_surface->width, obj_surface->height);
 
     VdpRect dst_rect;
     dst_rect.x0 = target_rect->x;
@@ -785,6 +785,9 @@ vdpau_PutSurface(
 {
     VDPAU_DRIVER_DATA_INIT;
 
+    VAStatus ret;
+
+    D(bug("putsurface(%x, (%d,%d+%dx%d=>%d,%d+%dx%d))\n", surface, srcx, srcy, srcw, srch, destx, desty, destw, desth));
     vdpau_set_display_type(driver_data, VA_DISPLAY_X11);
 
     /* XXX: no clip rects supported */
@@ -805,5 +808,7 @@ vdpau_PutSurface(
     dst_rect.y      = desty;
     dst_rect.width  = destw;
     dst_rect.height = desth;
-    return put_surface(driver_data, surface, xid, w, h, &src_rect, &dst_rect, flags);
+    ret = put_surface(driver_data, surface, xid, w, h, &src_rect, &dst_rect, flags);
+
+    return ret;
 }

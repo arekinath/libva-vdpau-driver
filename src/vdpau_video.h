@@ -60,6 +60,7 @@ struct object_context {
     void                        *last_pic_param;
     void                        *last_slice_params;
     unsigned int                 last_slice_params_count;
+    struct object_buffer        *last_slice_data;
     VdpCodec                     vdp_codec;
     VdpDecoderProfile            vdp_profile;
     VdpDecoder                   vdp_decoder;

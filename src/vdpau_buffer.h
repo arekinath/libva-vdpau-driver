@@ -28,6 +28,8 @@ struct object_buffer {
     struct object_base  base;
     VAContextID         va_context;
     VABufferType        type;
+    const char *        typestr;
+    struct object_buffer *next_pre_slice_params;
     void               *buffer_data;
     unsigned int        buffer_size;
     unsigned int        max_num_elements;

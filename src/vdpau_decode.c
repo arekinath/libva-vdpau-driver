@@ -463,6 +463,13 @@ translate_VASliceDataBuffer(
 )
 {
     if (obj_context->vdp_codec == VDP_CODEC_H264) {
+        /* Queue up any slicedata that arrive before sliceparams */
+        if (obj_context->last_slice_params_count == 0) {
+            obj_buffer->next_pre_slice_params = obj_context->last_slice_data;
+            obj_context->last_slice_data = obj_buffer;
+            return 1;
+        }
+        D(bug("start h264 data buffer (slices = %d)\n", obj_context->last_slice_params_count));
         /* Check we have the start code */
         /* XXX: check for other codecs too? */
         /* XXX: this assumes we get SliceParams before SliceData */
@@ -472,6 +479,7 @@ translate_VASliceDataBuffer(
         for (i = 0; i < obj_context->last_slice_params_count; i++) {
             VASliceParameterBufferH264 * const slice_param = &slice_params[i];
             uint8_t *buf = (uint8_t *)obj_buffer->buffer_data + slice_param->slice_data_offset;
+            D(bug("h264 slice at +0x%x (%u long) (#%d)\n", slice_param->slice_data_offset, slice_param->slice_data_size, i));
             if (memcmp(buf, start_code_prefix, sizeof(start_code_prefix)) != 0) {
                 if (append_VdpBitstreamBuffer(obj_context,
                                               start_code_prefix,
@@ -483,6 +491,7 @@ translate_VASliceDataBuffer(
                                           slice_param->slice_data_size) < 0)
                 return 0;
         }
+        D(bug("h264 data buffer done\n"));
         return 1;
     }
 
@@ -902,6 +911,19 @@ translate_VASliceParameterBufferH264(
     pic_info->num_ref_idx_l1_active_minus1 = slice_param->num_ref_idx_l1_active_minus1;
     obj_context->last_slice_params         = obj_buffer->buffer_data;
     obj_context->last_slice_params_count   = obj_buffer->num_elements;
+
+    if (obj_context->last_slice_data) {
+        object_buffer_p sdata_buffer = obj_context->last_slice_data, sdata_next = NULL;
+        while (sdata_buffer != NULL) {
+            if (!translate_VASliceDataBuffer(driver_data, obj_context, sdata_buffer))
+                return 0;
+            sdata_next = sdata_buffer->next_pre_slice_params;
+            sdata_buffer->next_pre_slice_params = NULL;
+            sdata_buffer = sdata_next;
+        }
+        obj_context->last_slice_data = NULL;
+    }
+
     return 1;
 }
 
@@ -1209,27 +1231,29 @@ vdpau_RenderPicture(
     /* Translate buffers */
     for (i = 0; i < num_buffers; i++) {
         object_buffer_p obj_buffer = VDPAU_BUFFER(buffers[i]);
+        D(bug("try translate buffer %x (type = %d/%s)\n", buffers[i], obj_buffer->type, obj_buffer->typestr));
         if (!translate_buffer(driver_data, obj_context, obj_buffer))
             return VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE;
+        D(bug("translated buffer %x\n", buffers[i]));
         /* Release any buffer that is not VASliceDataBuffer */
         /* VASliceParameterBuffer is also needed to check for start_codes */
         switch (obj_buffer->type) {
         case VASliceParameterBufferType:
         case VASliceDataBufferType:
-            schedule_destroy_va_buffer(driver_data, obj_buffer);
+            //schedule_destroy_va_buffer(driver_data, obj_buffer);
             break;
         case VAPictureParameterBufferType:
             /* Preserve VAPictureParameterBufferMPEG4 */
             if (obj_context->vdp_codec == VDP_CODEC_MPEG4) {
-                schedule_destroy_va_buffer(driver_data, obj_buffer);
+                //schedule_destroy_va_buffer(driver_data, obj_buffer);
                 break;
             }
             /* fall-through */
         default:
-            destroy_va_buffer(driver_data, obj_buffer);
+            //destroy_va_buffer(driver_data, obj_buffer);
             break;
         }
-        buffers[i] = VA_INVALID_BUFFER;
+        //buffers[i] = VA_INVALID_BUFFER;
     }
 
     return VA_STATUS_SUCCESS;
@@ -1277,6 +1301,8 @@ vdpau_EndPicture(
             dump_VdpBitstreamBuffer(&obj_context->vdp_bitstream_buffers[i]);
     }
 
+    D(bug("rendering to surface %x\n", obj_context->current_render_target));
+
     VAStatus va_status;
     VdpStatus vdp_status;
     vdp_status = ensure_decoder_with_max_refs(
@@ -1284,6 +1310,7 @@ vdpau_EndPicture(
         obj_context,
         get_num_ref_frames(obj_context)
     );
+    D(bug("vdp_status after ensure = %d\n", vdp_status));
     if (vdp_status == VDP_STATUS_OK)
         vdp_status = vdpau_decoder_render(
             driver_data,
@@ -1294,9 +1321,10 @@ vdpau_EndPicture(
             obj_context->vdp_bitstream_buffers
         );
     va_status = vdpau_get_VAStatus(vdp_status);
+    D(bug("vdp_status after render = %d\n", vdp_status));
 
     /* XXX: assume we are done with rendering right away */
-    obj_context->current_render_target = VA_INVALID_SURFACE;
+    //obj_context->current_render_target = VA_INVALID_SURFACE;
 
     /* Release pending buffers */
     destroy_dead_va_buffers(driver_data, obj_context);

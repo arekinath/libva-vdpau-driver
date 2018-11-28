@@ -41,6 +41,8 @@ destroy_dead_va_buffers(
     if (obj_context->dead_buffers_count < 1)
         return;
 
+    return;
+
     ASSERT(obj_context->dead_buffers);
     for (i = 0; i < obj_context->dead_buffers_count; i++) {
         obj_buffer = VDPAU_BUFFER(obj_context->dead_buffers[i]);
@@ -96,6 +98,7 @@ destroy_va_buffer(
 {
     if (!obj_buffer)
         return;
+    D(bug("destroying va buffer %x\n", obj_buffer->base.id));
 
     if (obj_buffer->buffer_data) {
         free(obj_buffer->buffer_data);
@@ -142,8 +145,8 @@ vdpau_CreateBuffer(
 {
     VDPAU_DRIVER_DATA_INIT;
 
-    if (buf_id)
-        *buf_id = VA_INVALID_BUFFER;
+    /*if (buf_id)
+        *buf_id = VA_INVALID_BUFFER;*/
 
     /* Validate type */
     switch (type) {
@@ -165,9 +168,25 @@ vdpau_CreateBuffer(
     if (!obj_buffer)
         return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
+    switch (type) {
+    case VAPictureParameterBufferType:
+        obj_buffer->typestr = "VAPictureParameterBufferType"; break;
+    case VAIQMatrixBufferType:
+        obj_buffer->typestr = "VAIQMatrixBufferType"; break;
+    case VASliceParameterBufferType:
+        obj_buffer->typestr = "VASliceParameterBufferType"; break;
+    case VASliceDataBufferType:
+        obj_buffer->typestr = "VASliceDataBufferType"; break;
+    case VABitPlaneBufferType:
+        obj_buffer->typestr = "VABitPlaneBufferType"; break;
+    case VAImageBufferType:
+        obj_buffer->typestr = "VAImageBufferType"; break;
+    }
+
     if (data)
         memcpy(obj_buffer->buffer_data, data, obj_buffer->buffer_size);
 
+    D(bug("allocated buffer id %x (%s)\n", obj_buffer->base.id, obj_buffer->typestr));
     if (buf_id)
         *buf_id = obj_buffer->base.id;
 
@@ -185,6 +204,7 @@ vdpau_DestroyBuffer(
 
     object_buffer_p obj_buffer = VDPAU_BUFFER(buffer_id);
 
+    D(bug("destroy req for buffer id %x\n", buffer_id));
     if (obj_buffer && !obj_buffer->delayed_destroy)
         destroy_va_buffer(driver_data, obj_buffer);
 
@@ -223,8 +243,12 @@ vdpau_MapBuffer(
     VDPAU_DRIVER_DATA_INIT;
 
     object_buffer_p obj_buffer = VDPAU_BUFFER(buf_id);
-    if (!obj_buffer)
+    if (!obj_buffer) {
+        D(bug("tried to map invalid buffer id %x\n", buf_id));
         return VA_STATUS_ERROR_INVALID_BUFFER;
+    }
+
+    D(bug("map buffer id %x\n", buf_id));
 
     if (pbuf)
         *pbuf = obj_buffer->buffer_data;

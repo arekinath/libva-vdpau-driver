@@ -462,6 +462,7 @@ vdpau_CreateSurfaces(
         }
 
         int va_surface = object_heap_allocate(&driver_data->surface_heap);
+        D(bug("created %dx%d surface at id %x, vdp handle %x\n", width, height, va_surface, vdp_surface));
         object_surface_p obj_surface = VDPAU_SURFACE(va_surface);
         if (!obj_surface) {
             va_status = VA_STATUS_ERROR_ALLOCATION_FAILED;
