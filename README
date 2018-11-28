@@ -1,0 +1,33 @@
+
+  libva-vdpau-driver
+  A VDPAU-based backend for VA-API
+
+  Copyright (C) 2009-2011 Splitted-Desktop Systems
+
+
+License
+-------
+
+libva-vdpau-driver is available under the terms of the GNU General
+Public License.
+
+
+Overview
+--------
+
+libva-vdpau-driver consists in a VDPAU-based backend for VA-API.
+
+
+Requirements
+------------
+
+libVA API version (not package)	GLX support	MPEG-4 support
+0.29-branch >= 0.29.0-sds8	No		No
+0.30-branch >= 0.30.0-sds1	No		No
+0.30-branch >= 0.30.4-sds5	Yes		No
+upstream 0.31-branch		No		No
+0.31-branch >= 0.31.0-sds1	Yes		No
+0.31-branch >= 0.31.0-sds4	Yes		Yes
+
+mplayer-vaapi >= 20090320 patchset is also needed if you intend to use
+MPlayer.
