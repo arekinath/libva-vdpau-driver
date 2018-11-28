@@ -165,6 +165,15 @@ vdpau_QueryConfigAttributes(
     int                *num_attribs
 ) attribute_hidden;
 
+// vaQuerySurfaceAttributes
+VAStatus
+vdpau_QuerySurfaceAttributes(
+    VADriverContextP    ctx,
+    VAConfigID          config_id,
+    VASurfaceAttrib    *attrib_list,
+    unsigned int       *num_attribs
+) attribute_hidden;
+
 // vaCreateSurfaces
 VAStatus
 vdpau_CreateSurfaces(
