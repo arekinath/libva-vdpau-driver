@@ -1174,6 +1174,7 @@ vdpau_BeginPicture(
 
     obj_surface->va_surface_status           = VASurfaceRendering;
     obj_context->last_pic_param              = NULL;
+    obj_context->last_slice_data             = NULL;
     obj_context->last_slice_params           = NULL;
     obj_context->last_slice_params_count     = 0;
     obj_context->current_render_target       = obj_surface->base.id;
